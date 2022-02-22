@@ -7,8 +7,14 @@ from TaxiFareModel.encoders import DistanceTransformer, TimeFeaturesEncoder
 from sklearn.model_selection import train_test_split
 import numpy as np
 from TaxiFareModel.data import get_data, clean_data
+import mlflow
+from mlflow.tracking import MlflowClient
+from memoized_property import memoized_property
+import joblib
 
 class Trainer():
+    MLFLOW_URI = "https://mlflow.lewagon.co/"
+
     def __init__(self, X, y):
         """
             X: pandas DataFrame
@@ -17,6 +23,7 @@ class Trainer():
         self.pipeline = None
         self.X = X
         self.y = y
+        self.experiment_name = "[PT] [Lisbon] [JoaoMarques1] LinearRegression TaxiFareModel + 1.0.1"
 
     def set_pipeline(self):
         """defines the pipeline as a class attribute"""
@@ -52,6 +59,33 @@ class Trainer():
         y_pred = self.pipeline.predict(X_test)
         return np.sqrt(((y_pred - y_test)**2).mean())
 
+    @memoized_property
+    def mlflow_client(self):
+        mlflow.set_tracking_uri(self.MLFLOW_URI)
+        return MlflowClient()
+
+    @memoized_property
+    def mlflow_experiment_id(self):
+        try:
+            return self.mlflow_client.create_experiment(self.experiment_name)
+        except BaseException:
+            return self.mlflow_client.get_experiment_by_name(self.experiment_name).experiment_id
+
+    @memoized_property
+    def mlflow_run(self):
+        return self.mlflow_client.create_run(self.mlflow_experiment_id)
+
+    def mlflow_log_param(self, key, value):
+        self.mlflow_client.log_param(self.mlflow_run.info.run_id, key, value)
+
+    def mlflow_log_metric(self, key, value):
+        self.mlflow_client.log_metric(self.mlflow_run.info.run_id, key, value)
+
+    def save_model(self):
+        """ Save the trained model into a model.joblib file """
+        joblib.dump(self.pipeline, 'model.joblib')
+
+
 
 if __name__ == "__main__":
     # get data
@@ -69,3 +103,12 @@ if __name__ == "__main__":
     # evaluate
     eval = trainer.evaluate(X_test, y_test)
     print(eval)
+    # save model
+    trainer.save_model()
+
+    trainer.mlflow_log_metric("rmse", eval)
+    trainer.mlflow_log_param("model", 'linear')
+    trainer.mlflow_log_param("student_name", 'Joao Marques')
+
+    experiment_id = trainer.mlflow_experiment_id
+    print(f"experiment URL: https://mlflow.lewagon.co/#/experiments/{experiment_id}")

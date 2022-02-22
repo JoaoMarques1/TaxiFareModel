@@ -1,0 +1,15 @@
+artifact_uri: file:///Users/joaomarques/code/JoaoMarques1/TaxiFareModel/mlruns/1/4c2ae79b148745ceaa85b80ebacdd43c/artifacts
+end_time: null
+entry_point_name: ''
+experiment_id: '1'
+lifecycle_stage: active
+name: ''
+run_id: 4c2ae79b148745ceaa85b80ebacdd43c
+run_uuid: 4c2ae79b148745ceaa85b80ebacdd43c
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1645539353151
+status: 1
+tags: []
+user_id: unknown
